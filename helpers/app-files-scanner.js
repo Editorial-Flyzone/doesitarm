@@ -1,10 +1,23 @@
 import plist from 'plist'
 import axios from 'axios'
+import prettyBytes from 'pretty-bytes'
+import * as zip from '@zip.js/zip.js'
 
+import { isString } from './check-types.js'
 import parseMacho from './macho/index.js'
 
-const prettyBytes = require('pretty-bytes')
+// Vite Web Workers - https://vitejs.dev/guide/features.html#web-workers
+import { runScanWorker } from '~/helpers/scanner/client.mjs'
 
+const scannerVersion = (() => {
+    // If there's no window
+    // then use scanner V1
+    if ( typeof window === 'undefined' ) return '1'
+
+    const urlSearchParams = new URLSearchParams(window.location.search)
+
+    return String( urlSearchParams.get('version') || '1' )
+})()
 
 const knownArchiveExtensions = new Set([
     'app',
@@ -27,24 +40,6 @@ const knownAppExtensions =  new Set([
     '.app.zip'
 ])
 
-function isString( maybeString ) {
-    return (typeof maybeString === 'string' || maybeString instanceof String)
-}
-
-function isValidHttpUrl( string ) {
-    if ( !isString( string ) ) return false
-
-    let url
-
-    try {
-        url = new URL(string)
-    } catch (_) {
-        return false
-    }
-
-    return url.protocol === "http:" || url.protocol === "https:"
-}
-
 function callWithTimeout(timeout, func) {
     return new Promise((resolve, reject) => {
         const timer = setTimeout(() => reject(new Error("timeout")), timeout)
@@ -55,31 +50,53 @@ function callWithTimeout(timeout, func) {
     })
 }
 
-let zip
+
+// https://stackoverflow.com/a/35610685/1397641
+const arrayChangeHandler = {
+    get: function( target, property ) {
+        console.log('getting ' + property + ' for ' + target)
+        // property is index in this case
+        return target[property]
+    },
+    set: function( target, property, value, receiver ) {
+        console.log('setting ' + property + ' for ' + target + ' with value ' + value)
+        target[property] = value
+        // you have to return true to accept the changes
+        return true
+    }
+}
+
+export function makeObservableArray () {
+    const originalArray = []
+    const proxyToArray = new Proxy( originalArray, arrayChangeHandler )
+
+    return {
+        originalArray,
+        proxyToArray
+    }
+}
 
 export default class AppFilesScanner {
 
     constructor( {
         observableFilesArray,
-        testResultStore
+        testResultStore,
+        zipModule = null
     } ) {
         // Files to process
         this.files = observableFilesArray
 
         this.testResultStore = testResultStore
 
-        // https://gildas-lormeau.github.io/zip.js/
-        zip = require('@zip.js/zip.js')
-
-        // https://gildas-lormeau.github.io/zip.js/core-api.html#configuration
-        zip.configure({
-            workerScripts: true,
-            // workerScripts: {
-            //     inflate: ["lib/z-worker-pako.js", "pako_inflate.min.js"]
-            // }
-        })
+        this.zipModule = zipModule
     }
 
+    get zip () {
+
+        if ( this.zipModule ) return this.zipModule
+
+        return zip
+    }
 
     isApp ( file ) {
 
@@ -133,7 +150,9 @@ export default class AppFilesScanner {
     // }
 
     async unzipFile ( file ) {
-        const fileReader = new zip.BlobReader( file.instance )//new FileReader()
+        if ( !this.zip ) throw new Error('Zip module not loaded')
+
+        const fileReader = new this.zip.BlobReader( file.instance )//new FileReader()
 
         fileReader.onload = function() {
 
@@ -163,7 +182,7 @@ export default class AppFilesScanner {
         // console.log('fileReader', fileReader)
 
         // https://gildas-lormeau.github.io/zip.js/core-api.html#zip-reading
-        const zipReader = new zip.ZipReader( fileReader )
+        const zipReader = new this.zip.ZipReader( fileReader )
 
         // zipReader.onprogress = console.log
 
@@ -421,7 +440,7 @@ export default class AppFilesScanner {
         const infoXml = await rootInfoEntry.getData(
             // writer
             // https://gildas-lormeau.github.io/zip.js/core-api.html#zip-writing
-            new zip.TextWriter(),
+            new this.zip.TextWriter(),
             // options
             {
                 useWebWorkers: true,
@@ -495,7 +514,7 @@ export default class AppFilesScanner {
         const bundleExecutableBlob = await bundleExecutable.getData(
             // writer
             // https://gildas-lormeau.github.io/zip.js/core-api.html#zip-writing
-            new zip.BlobWriter(),
+            new this.zip.BlobWriter(),
             // options
             {
                 useWebWorkers: true
@@ -565,7 +584,7 @@ export default class AppFilesScanner {
             this.files.unshift( {
                 status: 'loaded',
                 displayName: null,
-                statusMessage: '⏳ File Loaded and Queud',
+                statusMessage: '⏳ File Loaded and Qeued',
                 details: [],
                 appVersion: null,
                 displayAppSize: prettyBytes( fileInstance.size ),
@@ -585,7 +604,7 @@ export default class AppFilesScanner {
 
         // Scan for archives
         await Promise.all( this.files.map( ( file, scanIndex ) => {
-            return new Promise( (resolve, reject) => {
+            return new Promise( async (resolve, reject) => {
 
                 const timer = setTimeout(() => {
                     file.statusMessage = '❔ Scan timed out'
@@ -594,10 +613,34 @@ export default class AppFilesScanner {
                     reject(new Error('Scan timed out'))
                 }, scanTimeoutSeconds * 1000)
 
+                console.log( 'Scanning', file.name )
+
+                console.log( 'scannerVersion', scannerVersion )
+
+                if ( scannerVersion === '2' ) {
+
+
+                    const { scan } = await runScanWorker( file.instance, messageDetails => {
+                        console.log( 'messageDetails', messageDetails )
+
+                        file.statusMessage = messageDetails.message
+                        file.status = messageDetails.status
+                    } )
+
+                    console.log('scan', scan)
+
+                    clearTimeout(timer)
+
+                    resolve()
+                    return
+                }
+
                 this.scanFile( file, scanIndex ).then(
                     response => resolve(response),
                     err => reject(new Error(err))
                 ).finally(() => clearTimeout(timer))
+
+                resolve()
             })
         }))
 
@@ -610,6 +653,34 @@ export default class AppFilesScanner {
 
 
         return
+    }
+
+    async setupZipReader () {
+        // https://gildas-lormeau.github.io/zip.js/
+        // zip = await import('@zip.js/zip.js')
+
+        // console.log( 'zip', zip )
+
+        // https://gildas-lormeau.github.io/zip.js/core-api.html#configuration
+        zip.configure({
+            workerScripts: true,
+            // workerScripts: {
+            //     inflate: ["lib/z-worker-pako.js", "pako_inflate.min.js"]
+            // }
+        })
+    }
+
+    get isSetup () {
+        return this.zip === null
+    }
+
+    async setup () {
+
+        // Setup zip reader if not already done
+        if ( !this.zipModule && !zip ) {
+            await this.setupZipReader()
+        }
+
     }
 
 }

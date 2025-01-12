@@ -1,25 +1,37 @@
 module.exports = {
-    purge: {
-        enabled: true,//process.env.NODE_ENV === 'production',
-        content: [
-            'components/**/*.vue',
-            'layouts-eleventy/**/*.js',
-            'layouts/**/*.vue',
-            'pages/**/*.vue',
-            'pages-eleventy/**/*.js',
-            'plugins/**/*.js',
-            'nuxt.config.js'
-        ]
-    },
+    content: [
+        // General
+        'helpers/**/*.js',
+
+        // Nuxt
+        'components/**/*.vue',
+        'layouts/**/*.vue',
+        'pages/**/*.vue',
+        'plugins/**/*.js',
+
+        // Eleventy
+        'layouts-eleventy/**/*.js',
+        'pages-eleventy/**/*.js',
+
+        // Astro
+        'src/**/*.astro',
+        'src/**/*.vue',
+        'src/**/*.js',
+    ],
     future: {
         purgeLayersByDefault: true,
     },
     theme: {
-        container: {
-            center: true,
-            padding: '1.5rem',
-        },
         extend: {
+            container: {
+                center: true,
+                padding: '1.5rem',
+                screens: {
+                    lg: '1040px',
+                    xl: '1040px',
+                    '2xl': '1040px',
+                }
+            },
             colors: {
 
                 // Color Generator
@@ -67,6 +79,7 @@ module.exports = {
             fontFamily: {
                 primary: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"',
                 secondary: 'Inter, Georgia, Cambria, "Times New Roman", Times, serif',
+                emoji: 'sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"',
             },
             letterSpacing: {
                 wide: '0.3em',
@@ -87,7 +100,8 @@ module.exports = {
                 '3/4-screen': '75vh',
             },
             spacing: {
-                '16/9': '56.25%'
+                '16/9': '56.25%',
+                '1/2-screen': '50vw',
             },
             inset: {
                 '1/2': '50%',
@@ -104,5 +118,20 @@ module.exports = {
     variants: {
         backgroundImage: ['responsive', 'hover']
     },
-    plugins: []
+    // plugins: [
+    //     require( 'daisyui' )
+    // ],
+
+    // // daisyUI config
+    // // https://daisyui.com/docs/config/
+    // daisyui: {
+    //     // styled: false,
+    //     // themes: false,
+    //     // base: false,
+    //     // utils: false,
+    //     // logs: true,
+    //     // rtl: false,
+    //     prefix: 'daisy',
+    //     darkTheme: 'dark',
+    // },
 }

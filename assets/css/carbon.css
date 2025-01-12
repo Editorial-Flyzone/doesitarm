@@ -1,0 +1,137 @@
+/*! purgecss start ignore */
+
+/* Hidden on mobile for now */
+.float-corner #carbonads {
+    @apply hidden;
+
+    /* avoid layout shift on mobile */
+    /* min-height: 105.38px;  */
+}
+
+/* Immediate wrapper */
+.float-corner #carbonads > span {
+    @apply flex;
+    @apply flex-col;
+
+    @apply justify-center;
+
+    @apply gap-2;
+}
+
+#carbonads .carbon-wrap {
+    @apply flex;
+
+    @apply justify-center;
+}
+
+@media only screen and (min-width: 1350px) {
+    #carbonads {
+        @apply block;
+
+        @apply text-gray-300;
+
+        @apply bg-black-1;
+        @apply rounded;
+    }
+
+    .float-corner #carbonads {
+        @apply fixed;
+
+        font-size: 0.65rem;
+
+        right: 15px;
+        bottom: 15px;
+
+        z-index: 100;
+
+        max-width: 160px;
+    }
+}
+
+#carbonads .carbon-text {
+    @apply opacity-50;
+}
+
+#carbonads .carbon-poweredby {
+    @apply uppercase;
+    @apply text-center;
+    @apply opacity-25;
+
+    font-size: 0.45rem;
+}
+
+
+.carbon-inline-wide {
+    height: 90px;
+
+    font-size: 0.55rem;
+}
+
+/* Hide any extra loading ads */
+.carbon-inline-wide > div {
+    display: none;
+}
+
+.carbon-inline-wide #carbonads {
+    @apply block;
+    @apply relative;
+
+    @apply border;
+    @apply border-gray-700;
+    @apply rounded-lg;
+
+    overflow: hidden;
+
+    height: 100%;
+}
+
+.carbon-inline-wide #carbonads .carbon-wrap {
+    @apply justify-start;
+    @apply items-center;
+    @apply h-full;
+}
+
+.carbon-inline-wide .carbon-text {
+    @apply flex;
+    @apply items-center;
+
+    @apply w-full;
+    @apply h-full;
+
+    @apply px-2;
+    @apply py-2;
+}
+
+.carbon-inline-wide .carbon-poweredby {
+    @apply absolute;
+    @apply bottom-0;
+    @apply right-0;
+
+    @apply border-t;
+    @apply border-l;
+    @apply rounded-tl;
+
+    @apply px-1;
+}
+
+@media only screen and (min-width: 480px) {
+    .carbon-inline-wide {
+        font-size: 0.8rem;
+    }
+
+    .carbon-inline-wide .carbon-img {
+        @apply h-full;
+    }
+
+    .carbon-inline-wide .carbon-img img {
+        @apply h-full;
+        @apply w-auto;
+    }
+
+    .carbon-inline-wide .carbon-text {
+        @apply px-3;
+        @apply py-3;
+    }
+}
+
+/*! purgecss end ignore */

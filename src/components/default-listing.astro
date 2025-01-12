@@ -1,0 +1,116 @@
+---
+// Default Listing template for Apps, Games, and formulas
+
+import {
+    ListingDetails
+} from '~/helpers/listing-page.js'
+
+import Aliases from '~/src/components/listing-parts/aliases.astro'
+import ThomasCredit from '~/components/thomas-credit.vue'
+import RelatedLinks from '~/src/components/listing-parts/related-links.astro'
+import Virtualization from './listing-parts/virtualization.astro'
+import AdInline from '~/components/ad-inline.vue'
+import Devices from '~/src/components/listing-parts/devices.astro'
+import RelatedVideos from '~/src/components/listing-parts/related-videos.astro'
+import Bundles from '~/src/components/listing-parts/bundles.astro'
+import GameReports from '~/src/components/listing-parts/game-reports.astro'
+import LastUpdated from '~/src/components/listing-parts/last-updated.astro'
+
+import AllUpdatesSubscribe from '~/components/all-updates-subscribe.vue'
+
+// import { makeLastUpdatedFriendly } from '~/helpers/parse-date'
+// import { getAppEndpoint } from '~/helpers/app-derived.js'
+
+// import LinkButton from '~/components/link-button.vue'
+// import VideoRow from '~/components/video/row.vue'
+
+
+const {
+  listing
+} = Astro.props
+
+const details = new ListingDetails( listing )
+
+
+const adName = (() => {
+    // Games
+    // if ( details.isGame ) return 'new-world-1'
+
+    // Developer Tools
+    // if ( listing?.category?.slug === 'developer-tools' ) return 'jotform-for-developers-1'
+
+    // Productivity Apps
+    if ( listing?.category?.slug === 'productivity-tools' ) return 'notion-1'
+
+    // Live Production
+    if ( listing?.category?.slug === 'live-production-and-performance' ) return 'restream-1'
+
+    // Video and Motion Tools
+    // if ( listing?.category?.slug === 'video-and-motion-tools' ) return 'wondershare-arm-1'
+
+    // VPNs, Security, and Privacy
+    // if ( listing?.category?.slug === 'vpns-security-and-privacy' ) return 'expressvpn-bounty'
+
+    return 'default'
+})()
+
+---
+<section class="container space-y-8 py-32">
+
+    <div class="intro-content flex flex-col items-center text-center min-h-3/4-screen md:min-h-0 gap-8">
+
+        <div
+            class="title text-sm md:text-xl font-bold"
+            set:html={ details.mainHeading }
+        />
+
+        <h2 class="subtitle text-2xl md:text-5xl font-bold">
+            { details.subtitle }
+        </h2>
+
+        { details.isGame && (
+            <ThomasCredit />
+        )}
+
+        <Aliases listing={ listing } />
+
+        <!-- <AllUpdatesSubscribe
+            client:visible
+        /> -->
+
+        <div class="links space-y-6 sm:space-x-6">
+            <RelatedLinks
+                listing={ listing }
+            />
+        </div>
+
+
+        <Virtualization listing={ listing } />
+
+        <AdInline
+            name={ adName }
+        />
+
+        <Devices
+            listing={ listing }
+        />
+
+        <RelatedVideos
+            listing={ listing }
+        />
+
+    </div>
+
+    <Bundles
+        listing={ listing }
+    />
+
+    <GameReports
+        listing={ listing }
+    />
+
+    <LastUpdated
+        listing={ listing }
+    />
+
+</section>
